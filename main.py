@@ -33,8 +33,21 @@ def load_vgg(sess, vgg_path):
     vgg_layer4_out_tensor_name = 'layer4_out:0'
     vgg_layer7_out_tensor_name = 'layer7_out:0'
     
-    return None, None, None, None, None
+    # load the model from the given vgg_path
+    # model = tf.saved_model.loader.load(sess, [vgg_tag], vgg_path)
+    tf.saved_model.loader.load(sess, [vgg_tag], vgg_path)
+
+    # extract the layers of the vgg to modify into a FCN encoder
+    encoder_graph = tf.get_default_graph()
+    encoder_input = encoder_graph.get_tensor_by_name(vgg_input_tensor_name)
+    encoder_keep = encoder_graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
+    encoder_layer3 = encoder_graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
+    encoder_layer4 = encoder_graph.get_tensor_by_name(vgg_layer4_out_tensor_name)
+    encoder_layer7 = encoder_graph.get_tensor_by_name(vgg_layer7_out_tensor_name)
+    return encoder_input, encoder_keep, encoder_layer3, encoder_layer4, encoder_layer7
 tests.test_load_vgg(load_vgg, tf)
+
+
 
 
 def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
