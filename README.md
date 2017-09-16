@@ -1,6 +1,27 @@
 # Semantic Segmentation
+
 ### Introduction
 In this project, you'll label the pixels of a road in images using a Fully Convolutional Network (FCN).
+
+### Overview
+
+The main goal for this project is apply Fully Convolution Neural Network(FCN) idea to segragate the road surface from all other objects such as sidewalk, other cars, people, building, grass etc. FCN will take advantage of pretrained mode such as VGG 16 mode, use it as input, (the encoder part), then transfer to the decoder part, upsample to the same size as input image. There are 2 skipped connections in between encoder and decoder. This operation preserves the critical spatial information. 
+
+KITTI dataset includes training set and test set. Orginal image size is 1242x375. We are resize to 576x160. The FCN pipeline is based on the new image size. Each training image pair with ground true image which shows marked road surface. FCN trained on this dataset, test on unseed test dataset. 
+
+### Pretrained VGG Model
+
+Train a Convolution Neural Network is time and resource consuming process. The good new is there are some good pretrained model available to accelerate the process. The choosen VGG 16 has 7 convolution layers, we can export the layer 3, 4, 7 out for further process.    
+
+
+### Encoder and Decoder
+
+### Optimize and Train the Model
+
+### Model Performance
+
+### Future Works
+
 
 ### Setup
 ##### Frameworks and Packages
