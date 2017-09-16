@@ -11,10 +11,14 @@ KITTI dataset includes training set and test set. Orginal image size is 1242x375
 
 ### Pretrained VGG Model
 
-Train a Convolution Neural Network is time and resource consuming process. The good new is there are some good pretrained model available to accelerate the process. The choosen VGG 16 has 7 convolution layers, we can export the layer 3, 4, 7 out for further process.    
+Train a Convolution Neural Network is time and resource consuming process. The good new is there are some good pretrained model available to accelerate the process. The choosen VGG 16 has 7 convolution layers, we can export input layer, the VGG drop out rate, the layer 3, 4, 7 out for further process. 
 
+The VGG model is available at https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/vgg.zip.  
 
 ### Encoder and Decoder
+
+
+
 
 ### Optimize and Train the Model
 
