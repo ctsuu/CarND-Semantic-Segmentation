@@ -16,7 +16,7 @@ import warnings
 from distutils.version import LooseVersion
 import project_tests as tests
 import time
-import csv
+
 
 # Check TensorFlow Version
 assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), \
@@ -144,8 +144,7 @@ tests.test_optimize(optimize)
 
 def train_nn(
         sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss,
-        input_image, correct_label, keep_prob, learning_rate,
-        runs_dir=None, data_dir=None, image_shape=None, logits=None):
+        input_image, correct_label, keep_prob, learning_rate):
     """
     Train neural network and print out the loss during training.
     :param sess: TF Session
@@ -159,10 +158,7 @@ def train_nn(
     :param correct_label: TF Placeholder for label images
     :param keep_prob: TF Placeholder for dropout keep probability
     :param learning_rate: TF Placeholder for learning rate
-    :param runs_dir: directory where model weights and samples will be saved
-    :param data_dir: directory where the Kitty dataset is stored
-    :param image_shape: shape of the input image for prediction
-    :param logits: TF Placeholder for the FCN prediction
+
     """
 
 
@@ -259,10 +255,9 @@ def run():
 
 	# Save New trained model
         saver = tf.train.Saver()
-        filefcn_path = os.path.join(runs_dir, 'fcn-weight.ckpt')
-        #save_path = saver.save(sess, filefcn_path)
-        saver.save(sess, filefcn_path)
-        print('Model saved to: {}'.format(filefcn_path))
+        fcn_path = os.path.join(runs_dir, 'fcn_weight.ckpt')
+        saver.save(sess, fcn_path)
+        print('Model saved to: {}'.format(fcn_path))
 
 
 
