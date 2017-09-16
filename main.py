@@ -1,18 +1,33 @@
+#!/usr/bin/python
+"""
+main.py: version 0.1.0
+
+History:
+2017/08/02: Initial version.
+"""
+
+import os
 import os.path
+import scipy.misc
+import shutil
 import tensorflow as tf
 import helper
 import warnings
 from distutils.version import LooseVersion
 import project_tests as tests
-
+import time
+import csv
 
 # Check TensorFlow Version
-assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFlow version 1.0 or newer.  You are using {}'.format(tf.__version__)
+assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), \
+    'Please use TensorFlow version 1.0 or newer.' + \
+    '  You are using {}'.format(tf.__version__)
 print('TensorFlow Version: {}'.format(tf.__version__))
 
 # Check for a GPU
 if not tf.test.gpu_device_name():
-    warnings.warn('No GPU found. Please use a GPU to train your neural network.')
+    warnings.warn(
+        'No GPU found. Please use a GPU to train your neural network.')
 else:
     print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
 
@@ -21,10 +36,11 @@ def load_vgg(sess, vgg_path):
     """
     Load Pretrained VGG Model into TensorFlow.
     :param sess: TensorFlow Session
-    :param vgg_path: Path to vgg folder, containing "variables/" and "saved_model.pb"
-    :return: Tuple of Tensors from VGG model (image_input, keep_prob, layer3_out, layer4_out, layer7_out)
+    :param vgg_path: Path to vgg folder, containing "variables/" and
+                     "saved_model.pb"
+    :return: Tuple of Tensors from VGG model
+             (image_input, keep_prob, layer3_out, layer4_out, layer7_out)
     """
-    # TODO: Implement function
     #   Use tf.saved_model.loader.load to load the model and weights
     vgg_tag = 'vgg16'
     vgg_input_tensor_name = 'image_input:0'
@@ -32,19 +48,18 @@ def load_vgg(sess, vgg_path):
     vgg_layer3_out_tensor_name = 'layer3_out:0'
     vgg_layer4_out_tensor_name = 'layer4_out:0'
     vgg_layer7_out_tensor_name = 'layer7_out:0'
-    
-    # load the model from the given vgg_path
-    # model = tf.saved_model.loader.load(sess, [vgg_tag], vgg_path)
-    tf.saved_model.loader.load(sess, [vgg_tag], vgg_path)
 
-    # extract the layers of the vgg to modify into a FCN encoder
-    encoder_graph = tf.get_default_graph()
-    encoder_input = encoder_graph.get_tensor_by_name(vgg_input_tensor_name)
-    encoder_keep = encoder_graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
-    encoder_layer3 = encoder_graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
-    encoder_layer4 = encoder_graph.get_tensor_by_name(vgg_layer4_out_tensor_name)
-    encoder_layer7 = encoder_graph.get_tensor_by_name(vgg_layer7_out_tensor_name)
-    return encoder_input, encoder_keep, encoder_layer3, encoder_layer4, encoder_layer7
+    # load the model from the given vgg_path
+    model = tf.saved_model.loader.load(sess, [vgg_tag], vgg_path)
+
+    # extract the layers of the vgg to modify into a FCN
+    vgg_graph = tf.get_default_graph()
+    vgg_input = vgg_graph.get_tensor_by_name(vgg_input_tensor_name)
+    vgg_keep = vgg_graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
+    vgg_layer3 = vgg_graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
+    vgg_layer4 = vgg_graph.get_tensor_by_name(vgg_layer4_out_tensor_name)
+    vgg_layer7 = vgg_graph.get_tensor_by_name(vgg_layer7_out_tensor_name)
+    return vgg_input, vgg_keep, vgg_layer3, vgg_layer4, vgg_layer7
 tests.test_load_vgg(load_vgg, tf)
 
 
@@ -52,7 +67,8 @@ tests.test_load_vgg(load_vgg, tf)
 
 def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     """
-    Create the layers for a fully convolutional network.  Build skip-layers using the vgg layers.
+    Create the layers for a fully convolutional network.
+    Build skip-layers using the vgg layers.
     :param vgg_layer7_out: TF Tensor for VGG Layer 3 output
     :param vgg_layer4_out: TF Tensor for VGG Layer 4 output
     :param vgg_layer3_out: TF Tensor for VGG Layer 7 output
@@ -60,7 +76,45 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :return: The Tensor for the last layer of output
     """
     # TODO: Implement function
-    return None
+
+    custom_init = tf.random_normal_initializer(stddev=0.01)
+    # 1x1 convolution for encoder outputs: vgg_layer_7, vgg_layer_4 and vgg_layer_3
+    # make ready for skip connection
+    dec_layer1_out = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, padding= 'same', 
+        kernel_initializer= custom_init, 
+        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+
+    skip_layer2 = tf.layers.conv2d(vgg_layer4_out, num_classes, 1, padding= 'same', 
+        kernel_initializer= custom_init, 
+        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+
+    skip_layer3 = tf.layers.conv2d(vgg_layer3_out, num_classes, 1, padding= 'same', 
+        kernel_initializer= custom_init, 
+        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+
+    # upsample
+    dec_layer2_in = tf.layers.conv2d_transpose(dec_layer1_out, num_classes, 4, 
+        strides= (2, 2), padding= 'same', 
+        kernel_initializer= custom_init, 
+        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+
+    # combine matched encoder layer 2(vgg_layer_4) and decoder layer 2 to preserve spatial information
+    dec_layer2_out = tf.add(dec_layer2_in, skip_layer2)
+
+    # upsample again
+    dec_layer3_in = tf.layers.conv2d_transpose(dec_layer2_out, num_classes, 4,  
+        strides= (2, 2), padding= 'same', 
+        kernel_initializer= custom_init, 
+        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+
+    # combine matched encoder layer 1(vgg_layer_3) and decoder layer 3 to preserve spatial information
+    dec_layer3_out = tf.add(dec_layer3_in, skip_layer3)
+    # upsample to match last layer
+    nn_last_layer = tf.layers.conv2d_transpose(dec_layer3_out, num_classes, 16,  
+        strides= (8, 8), padding= 'same', 
+        kernel_initializer= custom_init, 
+        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+    return nn_last_layer
 tests.test_layers(layers)
 
 
@@ -73,62 +127,143 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :param num_classes: Number of classes to classify
     :return: Tuple of (logits, train_op, cross_entropy_loss)
     """
-    # TODO: Implement function
-    return None, None, None
+    # reshape the 4D output and label tensors to 2D:
+    # so each row represent a pixel and each column a class.
+    logits = tf.reshape(nn_last_layer, (-1, num_classes))
+    labels = tf.reshape(correct_label, (-1, num_classes))
+
+    # now define a loss function and a trainer/optimizer
+    cross_entropy_loss = tf.reduce_mean(
+        tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels))
+    train_op = tf.train.AdamOptimizer(
+        learning_rate).minimize(cross_entropy_loss)
+    return logits, train_op, cross_entropy_loss
 tests.test_optimize(optimize)
 
 
-def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
-             correct_label, keep_prob, learning_rate):
+
+def train_nn(
+        sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss,
+        input_image, correct_label, keep_prob, learning_rate,
+        runs_dir=None, data_dir=None, image_shape=None, logits=None):
     """
     Train neural network and print out the loss during training.
     :param sess: TF Session
     :param epochs: Number of epochs
     :param batch_size: Batch size
-    :param get_batches_fn: Function to get batches of training data.  Call using get_batches_fn(batch_size)
+    :param get_batches_fn: Function to get batches of training data.
+                           Call using get_batches_fn(batch_size)
     :param train_op: TF Operation to train the neural network
     :param cross_entropy_loss: TF Tensor for the amount of loss
     :param input_image: TF Placeholder for input images
     :param correct_label: TF Placeholder for label images
     :param keep_prob: TF Placeholder for dropout keep probability
     :param learning_rate: TF Placeholder for learning rate
+    :param runs_dir: directory where model weights and samples will be saved
+    :param data_dir: directory where the Kitty dataset is stored
+    :param image_shape: shape of the input image for prediction
+    :param logits: TF Placeholder for the FCN prediction
     """
-    # TODO: Implement function
-    pass
+
+
+    totalstarttime = time.clock()
+
+
+    sess.run(tf.global_variables_initializer())
+
+    for i in range(epochs):
+        print("running epochs:", i)
+
+        # periodically save every 5 epoch runs
+        if data_dir is not None and i > 0 and (i % 5) == 0:
+            # Save inference data using save_inference_samples
+            helper.save_inference_samples(
+                runs_dir, data_dir, sess, image_shape,
+                logits, keep_prob, input_image)
+
+        # start epoch training timer
+        starttime = time.clock()
+
+        # train on batches
+        for X, y in get_batches_fn(batch_size):
+            loss, _ = sess.run(
+                [cross_entropy_loss, train_op],
+                feed_dict={input_image: X, correct_label: y, keep_prob: 0.5})
+            print(" Training Loss: = {:.3f}".format(loss))
+
+        endtime = time.clock()
+        training_time = endtime-starttime
+        print("epoch {} execution time {:.1f} seconds,".format(i, training_time))
+
+
+    totalendtime = time.clock()
+    totaltime = totalendtime - totalstarttime
+    print("total training time {:.1f} minutes".format(totaltime/60))
 tests.test_train_nn(train_nn)
 
 
 def run():
+    """
+    Main routine to create and train a Fully Convolutional Network
+    for Semantic Segmenation.
+    """
+
+    # initialization
     num_classes = 2
     image_shape = (160, 576)
     data_dir = './data'
     runs_dir = './runs'
     tests.test_for_kitti_dataset(data_dir)
 
+    # Training Hyperparameters
+    epochs = 25
+    batch_size = 10
+    learning_rate = tf.constant(0.0001)
+
     # Download pretrained vgg model
     helper.maybe_download_pretrained_vgg(data_dir)
 
-    # OPTIONAL: Train and Inference on the cityscapes dataset instead of the Kitti dataset.
-    # You'll need a GPU with at least 10 teraFLOPS to train on.
-    #  https://www.cityscapes-dataset.com/
-
+    # Start training session
     with tf.Session() as sess:
         # Path to vgg model
         vgg_path = os.path.join(data_dir, 'vgg')
         # Create function to get batches
-        get_batches_fn = helper.gen_batch_function(os.path.join(data_dir, 'data_road/training'), image_shape)
-
-        # OPTIONAL: Augment Images for better results
-        #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
+        get_batches_fn = helper.gen_batch_function(
+            os.path.join(data_dir, 'data_road/training'), image_shape)
 
         # TODO: Build NN using load_vgg, layers, and optimize function
+        correct_label = tf.placeholder(
+            tf.int32, [None, image_shape[0], image_shape[1], num_classes])
+        enc_input, keep_prob, enc_layer3, enc_layer4, enc_layer7 = load_vgg(
+            sess, vgg_path)
+        nn_last_layer = layers(enc_layer3, enc_layer4, enc_layer7, num_classes)
+        logits, train_op, cross_entropy_loss = optimize(
+            nn_last_layer, correct_label, learning_rate, num_classes)
 
         # TODO: Train NN using the train_nn function
+        train_nn(
+            sess, epochs, batch_size, get_batches_fn, train_op,
+            cross_entropy_loss, enc_input, correct_label, keep_prob,
+            learning_rate, runs_dir, data_dir, image_shape, logits)
 
-        # TODO: Save inference data using helper.save_inference_samples
-        #  helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
+        # TODO: Save inference data using save_inference_samples
+        check_starttime = time.clock()
+        helper.save_inference_samples(
+            runs_dir, data_dir, sess, image_shape,
+            logits, keep_prob, enc_input)
+        check_endtime = time.clock()
+        check_time = check_endtime-check_starttime
+        print("FCN performance: {:.3f} FPS on 576x160 image.".format(100/check_time))
 
         # OPTIONAL: Apply the trained model to a video
+
+	# Save New trained model
+        saver = tf.train.Saver()
+        filefcn_path = os.path.join(runs_dir, 'fcn-weight.ckpt')
+        #save_path = saver.save(sess, filefcn_path)
+        saver.save(sess, filefcn_path)
+        print('Model saved to: {}'.format(filefcn_path))
+
 
 
 if __name__ == '__main__':
