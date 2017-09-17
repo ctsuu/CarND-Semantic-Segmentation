@@ -243,7 +243,7 @@ def run():
             logits, keep_prob, enc_input)
         check_endtime = time.clock()
         check_time = check_endtime-check_starttime
-        print("FCN performance: {:.3f} FPS on 576x160 image.".format(100/check_time))
+        print("FCN performance: {:.3f} FPS on 576x160 image.".format(293/check_time))
 
         # OPTIONAL: Apply the trained model to a video
 
