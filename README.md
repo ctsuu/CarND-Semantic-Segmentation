@@ -105,9 +105,13 @@ There are more images from epoch 25. In most of the cases, the green dots are at
  <img src="./images/umm_000058.png" width="720">
 </p>
 
+The model prediction speed is about 1.6 FPS. 
+
 ### Future Works
 
+Even FCN does the job on semantic segmentation, but the FPS is much slower than I expected. The Udacity class provided a lot of tips to improve the performance. 
 
+The Kitti dataset seems very small, I am looking for other dataset to give a try as well. 
 
 
 ### Setup
