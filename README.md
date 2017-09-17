@@ -80,7 +80,6 @@ Based on GTX 1070 GPU, it will take average 32 seconds to completed one epoch. T
 
 The learning rate seems right with this epoch and batch_size setting. It is slowly reach the lower loss, but not stop there yet. The model is not overfit yet.  
 
-### Future Works
 With current dataset, I didn't go further on the epochs. Compare the same image from epoch 5 and epoch 25.  
 <p align="center">
  <img src="./images/umm_000020.png" width="720">
@@ -89,6 +88,24 @@ With current dataset, I didn't go further on the epochs. Compare the same image 
  <img src="./images/umm_000020_5.png" width="720">
 </p>
 
+There are more images from epoch 25. In most of the cases, the green dots are attached to the road surface, not on cars, people and buildings. The edge of the road and sidewalk or grass is clear. The road surface can flow into intersection, parking lot and opposite lanes.  
+<p align="center">
+ <img src="./images/um_000024.png" width="720">
+</p>
+<p align="center">
+ <img src="./images/um_000032.png" width="720">
+</p>
+<p align="center">
+ <img src="./images/um_000050.png" width="720">
+</p>
+<p align="center">
+ <img src="./images/um_000061.png" width="720">
+</p>
+<p align="center">
+ <img src="./images/umm_000058.png" width="720">
+</p>
+
+### Future Works
 
 
 
