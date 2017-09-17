@@ -104,6 +104,18 @@ There are more images from epoch 25. In most of the cases, the green dots are at
 <p align="center">
  <img src="./images/umm_000058.png" width="720">
 </p>
+<p align="center">
+ <img src="./runs/uu_000073.png" width="720">
+</p>
+<p align="center">
+ <img src="./runs/uu_000077.png" width="720">
+</p>
+<p align="center">
+ <img src="./runs/uu_000095.png" width="720">
+</p>
+<p align="center">
+ <img src="./runs/uu_000098.png" width="720">
+</p>
 
 The model prediction speed is about 5 FPS. 
 
