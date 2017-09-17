@@ -105,7 +105,7 @@ There are more images from epoch 25. In most of the cases, the green dots are at
  <img src="./images/umm_000058.png" width="720">
 </p>
 
-The model prediction speed is about 1.6 FPS. 
+The model prediction speed is about 5 FPS. 
 
 ### Future Works
 
