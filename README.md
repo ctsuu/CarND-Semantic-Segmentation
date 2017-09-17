@@ -7,7 +7,7 @@ In this project, you'll label the pixels of a road in images using a Fully Convo
 
 The main goal for this project is apply 8 layers Fully Convolution Neural Network(FCN-8) idea to segragate the road surface from all other objects such as sidewalk, other cars, people, building, grass etc. FCN will take advantage of pretrained mode such as VGG 16 mode, use it as input, (the encoder part), then transfer to the decoder part, upsample to the same size as input image. There are 2 skipped connections in between encoder and decoder. This operation preserves the critical spatial information. 
 
-KITTI dataset includes training set and test set. Orginal image size is 1242x375. We are resize to 576x160. The FCN pipeline is based on the new image size. Each training image pair with ground true image which shows marked road surface. FCN trained on this dataset, test on unseed test dataset. 
+KITTI dataset includes training set and test set. Orginal image size is 1242x375. We are resize to 576x160. The FCN pipeline is based on the new image size. Each training image pair with ground truth image which shows marked road surface. FCN trained on this dataset, test on unseed test dataset. 
 
 ### Pretrained VGG Model
 
@@ -49,9 +49,41 @@ The last decoder layer is upsimpled from decoder layer 3, no skip connection.
 
 ### Optimize and Train the Model
 
+Now, we can compare the last layer output with the ground truth in tensorflow format. 
+
+Using cross entropy function and Adam Optimizer. 
+
+```
+cross_entropy_loss = tf.reduce_mean(
+        tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels))
+train_op = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy_loss)
+```
+The training hyperparameters are settled at:
+```
+epochs = 25
+batch_size = 10
+learning_rate = 0.0001
+```
+
 ### Model Performance
 
+Based on the following setting in the 1x1 convolution layer and upsample layer, 
+```
+ci = tf.random_normal_initializer(stddev=0.01)
+kr = tf.contrib.layers.l2_regularizer(1e-3)
+```
+the model is able to reduce the loss under 0.1 within 2-3 epochs, and come up some meaningful result in 5 epochs, with fuzzy edge. 25 epochs can reach the loss about 0.03-0.05. It will clearly seperate the road from most of the pictures.   
+
+Without the initializer and regularizer, 25 epochs will not enough to bring the loss down to 0.500. At this level, it cannot yield meaningful result. 
+
+Based on GTX 1070 GPU, it will take average 32 seconds to completed one epoch. The GPU can handle batch_size 10, more VRAM can handle larger batch_size. Larger batch_size such as 10 does make process 20% quicker than batch size 5. 
+
+The learning rate seems right with this epoch and batch_size setting. It is slowly reach the lower loss, but not stop there yet. The model is not overfit yet.  
+
 ### Future Works
+With current dataset, I didn't go further on the epochs. Compare the same image from epoch 5 and epoch 25.  
+![sample1](./umm_000020.png)
+![sample2](./umm_000020_5.png)
 
 
 ### Setup
