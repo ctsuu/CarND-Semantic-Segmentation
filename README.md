@@ -82,8 +82,15 @@ The learning rate seems right with this epoch and batch_size setting. It is slow
 
 ### Future Works
 With current dataset, I didn't go further on the epochs. Compare the same image from epoch 5 and epoch 25.  
-![sample1](./umm_000020.png)
-![sample2](./umm_000020_5.png)
+<p align="center">
+ <img src="./images/umm_000020.png" width="720">
+</p>
+<p align="center">
+ <img src="./images/umm_000020_5.png" width="720">
+</p>
+
+
+
 
 
 ### Setup
