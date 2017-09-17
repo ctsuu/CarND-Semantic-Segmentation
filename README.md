@@ -111,7 +111,7 @@ There are more images from epoch 25. In most of the cases, the green dots are at
  <img src="./runs/uu_000077.png" width="720">
 </p>
 <p align="center">
- <img src="./runs/uu_000095.png" width="720">
+ <img src="./runs/uu_000093.png" width="720">
 </p>
 <p align="center">
  <img src="./runs/uu_000098.png" width="720">
