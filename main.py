@@ -63,8 +63,6 @@ def load_vgg(sess, vgg_path):
 tests.test_load_vgg(load_vgg, tf)
 
 
-
-
 def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     """
     Create the layers for a fully convolutional network.
@@ -77,26 +75,24 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     """
     # TODO: Implement function
 
-    custom_init = tf.random_normal_initializer(stddev=0.01)
+    ci = tf.random_normal_initializer(stddev=0.01)
+    kr = tf.contrib.layers.l2_regularizer(1e-3)
+
     # 1x1 convolution for encoder outputs: vgg_layer_7, vgg_layer_4 and vgg_layer_3
     # make ready for skip connection
     dec_layer1_out = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, padding= 'same', 
-        kernel_initializer= custom_init, 
-        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+        kernel_initializer= ci, kernel_regularizer= kr)
 
     skip_layer2 = tf.layers.conv2d(vgg_layer4_out, num_classes, 1, padding= 'same', 
-        kernel_initializer= custom_init, 
-        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+        kernel_initializer= ci, kernel_regularizer= kr)
 
     skip_layer3 = tf.layers.conv2d(vgg_layer3_out, num_classes, 1, padding= 'same', 
-        kernel_initializer= custom_init, 
-        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+        kernel_initializer= ci, kernel_regularizer= kr)
 
     # upsample
     dec_layer2_in = tf.layers.conv2d_transpose(dec_layer1_out, num_classes, 4, 
         strides= (2, 2), padding= 'same', 
-        kernel_initializer= custom_init, 
-        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+        kernel_initializer= ci, kernel_regularizer= kr)
 
     # combine matched encoder layer 2(vgg_layer_4) and decoder layer 2 to preserve spatial information
     dec_layer2_out = tf.add(dec_layer2_in, skip_layer2)
@@ -104,16 +100,14 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     # upsample again
     dec_layer3_in = tf.layers.conv2d_transpose(dec_layer2_out, num_classes, 4,  
         strides= (2, 2), padding= 'same', 
-        kernel_initializer= custom_init, 
-        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+        kernel_initializer= ci, kernel_regularizer= kr)
 
     # combine matched encoder layer 1(vgg_layer_3) and decoder layer 3 to preserve spatial information
     dec_layer3_out = tf.add(dec_layer3_in, skip_layer3)
     # upsample to match last layer
     nn_last_layer = tf.layers.conv2d_transpose(dec_layer3_out, num_classes, 16,  
         strides= (8, 8), padding= 'same', 
-        kernel_initializer= custom_init, 
-        kernel_regularizer= tf.contrib.layers.l2_regularizer(1e-3))
+        kernel_initializer= ci, kernel_regularizer= kr)
     return nn_last_layer
 tests.test_layers(layers)
 
